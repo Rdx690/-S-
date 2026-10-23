@@ -35,9 +35,8 @@ jobs:
       - name: Upload APK artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: vfx-downloader-apks
+          name: vfx-downloader-release-apk
           path: |
-            vfx-downloader/app/build/outputs/apk/debug/*.apk
             vfx-downloader/app/build/outputs/apk/release/*.apk
           if-no-files-found: error
           retention-days: 30
@@ -52,4 +51,3 @@ jobs:
           prerelease: true
           files: |
             vfx-downloader/app/build/outputs/apk/release/*.apk
-            vfx-downloader/app/build/outputs/apk/debug/*.apk
