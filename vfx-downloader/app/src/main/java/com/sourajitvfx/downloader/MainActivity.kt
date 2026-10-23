@@ -191,12 +191,12 @@ class MainActivity : ComponentActivity() {
                     request.addOption("--merge-output-format", "mp4")
                 }
                 runOnUiThread { status.text = "DOWNLOADING • ${title.take(50)}" }
-                YoutubeDL.getInstance().execute(request, { progress, eta, line ->
+                YoutubeDL.getInstance().execute(request, UUID.randomUUID().toString()) { progress, eta, line ->
                     runOnUiThread {
                         progressBar.progress = progress.roundToInt().coerceIn(0, 100)
                         status.text = "DOWNLOADING ${progress.roundToInt().coerceIn(0, 100)}% • ETA ${eta.coerceAtLeast(0)}s"
                     }
-                }, UUID.randomUUID().toString())
+                }
                 runOnUiThread {
                     progressBar.progress = 100
                     status.text = "DOWNLOAD COMPLETE • Saved in app's VFX-Downloader folder"
