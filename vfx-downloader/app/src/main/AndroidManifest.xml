@@ -4,6 +4,8 @@
     <application
         android:allowBackup="false"
         android:label="VFX Downloader"
+        android:icon="@drawable/ic_vfx_logo"
+        android:roundIcon="@drawable/ic_vfx_logo"
         android:theme="@style/AppTheme"
         android:usesCleartextTraffic="false"
         android:extractNativeLibs="true">
