@@ -38,6 +38,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var qualityGroup: RadioGroup
     private var audioOnly = false
     private var busy = false
+    @Volatile private var engineReady = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -49,7 +50,8 @@ class MainActivity : ComponentActivity() {
             try {
                 YoutubeDL.getInstance().init(applicationContext)
                 FFmpeg.getInstance().init(applicationContext)
-                runOnUiThread { status.text = "READY • Download only content you have permission to save" }
+                engineReady = true
+                runOnUiThread { status.text = "READY • Paste a public media link to begin" }
             } catch (e: Exception) {
                 runOnUiThread { status.text = "ENGINE INIT ISSUE • ${e.message ?: "Check runtime setup"}" }
             }
@@ -154,6 +156,7 @@ class MainActivity : ComponentActivity() {
     private fun startDownload() {
         val link = urlInput.text?.toString()?.trim().orEmpty()
         if (link.isBlank()) { urlInput.error = "Paste a media URL first"; return }
+        if (!engineReady) { status.text = "ENGINE IS STARTING • Wait a moment and try again"; return }
         val uri = runCatching { Uri.parse(link) }.getOrNull()
         if (uri == null || uri.scheme !in listOf("http", "https") || uri.host.isNullOrBlank()) {
             urlInput.error = "Enter a valid http/https URL"; return
@@ -168,8 +171,6 @@ class MainActivity : ComponentActivity() {
         val qualityId = qualityGroup.checkedRadioButtonId
         executor.execute {
             try {
-                val info = YoutubeDL.getInstance().getInfo(link)
-                val title = info.title ?: "Media"
                 val outDir = File(getExternalFilesDir(android.os.Environment.DIRECTORY_DOWNLOADS), "VFX-Downloader")
                 if (!outDir.exists() && !outDir.mkdirs()) throw IllegalStateException("Cannot create download folder")
                 val request = YoutubeDLRequest(link)
@@ -177,6 +178,12 @@ class MainActivity : ComponentActivity() {
                 request.addOption("--no-mtime")
                 request.addOption("--newline")
                 request.addOption("--no-warnings")
+                request.addOption("--ignore-config")
+                request.addOption("--retries", "3")
+                request.addOption("--fragment-retries", "3")
+                request.addOption("--socket-timeout", "20")
+                val host = uri.host?.lowercase()?.removePrefix("www.")
+                if (host == "instagram.com" || host == "m.instagram.com") request.addOption("--extractor-retries", "2")
                 request.addOption("-o", File(outDir, "%(title).180B.%(ext)s").absolutePath)
                 if (audioOnly) {
                     request.addOption("-f", "bestaudio/best")
@@ -190,7 +197,7 @@ class MainActivity : ComponentActivity() {
                     }
                     request.addOption("--merge-output-format", "mp4")
                 }
-                runOnUiThread { status.text = "DOWNLOADING • ${title.take(50)}" }
+                runOnUiThread { status.text = "STARTING DOWNLOAD • Instagram may restrict some posts" }
                 YoutubeDL.getInstance().execute(request, UUID.randomUUID().toString()) { progress, eta, line ->
                     runOnUiThread {
                         progressBar.progress = progress.roundToInt().coerceIn(0, 100)
